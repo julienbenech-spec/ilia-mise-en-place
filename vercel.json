@@ -1,7 +1,6 @@
 {
-  "cleanUrls": true,
   "rewrites": [
-    { "source": "/((?!app\\.js|app\\.css|favicon\\.svg).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
