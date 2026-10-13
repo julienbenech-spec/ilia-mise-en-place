@@ -62,7 +62,8 @@ main{padding:20px 0 120px}
 .qty .n{font-size:22px;font-weight:800;line-height:1.1;white-space:nowrap}
 .qty .u{font-size:14px;font-weight:600}
 .qty select.fmt{font-size:14px;font-weight:600;color:var(--ink);background:transparent;border:0;border-bottom:1px dotted var(--ink);padding:2px 0;border-radius:0;-webkit-appearance:none;appearance:none}
-.qty .w{font-size:13px;font-weight:600;color:var(--ink-muted)}
+.qty{min-width:0}
+.qty .w{font-size:13px;font-weight:600;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .qty .na{font-size:14px;font-weight:600;color:var(--ink-muted)}
 .who select{font-size:14px;font-weight:600;color:var(--ink);background:transparent;border:1.5px dashed var(--ink-muted);border-radius:999px;padding:6px 12px;min-height:40px;max-width:100%;-webkit-appearance:none;appearance:none}
 .who select.set{border-style:solid;border-color:var(--ink)}
