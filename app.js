@@ -368,7 +368,7 @@ function loadInventory() {
     S.counts = {};
     d.rows.forEach(function (r) {
       var c = (r.counts || []).map(function (x) { return { format: x.format, qty: Number(x.qty) }; });
-      if (c.length) S.touched[r.id] = true;
+      if (c.length || d.saved_at) S.touched[r.id] = true;
       if (!c.length) c = [{ format: r.unit_kind === 'piece' ? 'piece' : r.default_format, qty: 0 }];
       S.counts[r.id] = c;
     });
