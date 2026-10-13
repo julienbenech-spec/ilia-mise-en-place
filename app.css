@@ -135,8 +135,9 @@ table.t .r{text-align:right}
   .wrap{padding:0 16px}
   .line .main{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nm acts" "qty who"}
   .line .main .nm{grid-area:nm}.line .main .qty{grid-area:qty}.line .main .who{grid-area:who}.line .main .acts{grid-area:acts}
-  .inv .main{grid-template-columns:1fr;grid-template-areas:none}
-  .inv .counts{justify-content:flex-start}
+  .inv .main{grid-template-columns:minmax(0,1fr);grid-template-areas:"nm" "counts";gap:10px}
+  .inv .main .nm{grid-area:nm}
+  .inv .counts{grid-area:counts;justify-content:flex-start;flex-wrap:wrap}
   .login{padding:40px 20px}
 }
 
