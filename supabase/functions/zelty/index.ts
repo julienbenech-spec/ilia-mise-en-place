@@ -66,16 +66,25 @@ function countBases(it: any, bases: Set<string>, mult = 1): number {
 }
 
 // baseShare : part d'une portion pour chaque base du bowl (1, 1/2, 1/3…)
-function addItem(agg: Agg, it: any, mult: number, bases: Set<string>, baseShare: number) {
+function addItem(agg: Agg, it: any, mult: number, bases: Set<string>, baseShare: number, full: Set<string> = new Set()) {
   const q = (Number(it.quantity) || 1) * mult;
   const key = keyOf(it);
   const cur = agg.get(key) ?? {
     name: it.name ?? "?", kind: it.type === "option_value" ? "option" : "dish", qty: 0, portion: 0,
   };
   cur.qty += q;
-  cur.portion += bases.has(key) ? q * baseShare : q;
+  cur.portion += bases.has(key) && !full.has(key) ? q * baseShare : q;
   agg.set(key, cur);
-  for (const c of children(it)) addItem(agg, c, q, bases, baseShare);
+  for (const c of children(it)) addItem(agg, c, q, bases, baseShare, full);
+}
+
+// Bases servies en portion entière même avec une autre base (ex. mesclun)
+async function fullBaseItems(): Promise<Set<string>> {
+  const { data: preps } = await sb.from("preparations").select("id").eq("category", "bases").eq("base_always_full", true);
+  const ids = (preps ?? []).map((p: any) => p.id);
+  if (!ids.length) return new Set();
+  const { data: its } = await sb.from("items").select("item_id").in("preparation_id", ids);
+  return new Set((its ?? []).map((i: any) => i.item_id));
 }
 
 async function baseItems(): Promise<Set<string>> {
@@ -88,6 +97,7 @@ async function baseItems(): Promise<Set<string>> {
 
 async function importDay(restaurantId: number, zeltyId: string, day: string) {
   const bases = await baseItems();
+  const full = await fullBaseItems();
   const aggs: Record<string, Agg> = { midi: new Map(), soir: new Map() };
   const stats: Record<string, { orders: number; revenue: number }> = {
     midi: { orders: 0, revenue: 0 }, soir: { orders: 0, revenue: 0 },
@@ -110,7 +120,7 @@ async function importDay(restaurantId: number, zeltyId: string, day: string) {
       stats[svc].revenue += Number(o.price?.final_amount_inc_tax) || 0;
       for (const it of o.items ?? []) {
         const n = countBases(it, bases);
-        addItem(aggs[svc], it, 1, bases, n > 1 ? 1 / n : 1);
+        addItem(aggs[svc], it, 1, bases, n > 1 ? 1 / n : 1, full);
       }
     }
     if (orders.length < PAGE) break;
