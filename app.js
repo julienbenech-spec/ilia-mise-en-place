@@ -321,9 +321,54 @@ function openPrint() {
     if (e.target === m || e.target.id === 'pclose') m.remove();
     if (e.target.id === 'pgo') {
       var quoi = m.querySelector('input[name=pq]:checked').value, comment = m.querySelector('input[name=pc]:checked').value;
-      m.remove(); buildPrint(quoi, comment); setTimeout(function () { window.print(); }, 50);
+      m.remove(); buildPrint(quoi, comment);
+      if (isMobile()) makePdf(); else window.print();
     }
   });
+}
+/* Sur téléphone, window.print() est souvent bloqué (Safari iOS, navigateurs intégrés) :
+   on fabrique un vrai fichier PDF et on propose de le partager ou de l'enregistrer. */
+function isMobile() { return window.matchMedia && window.matchMedia('(pointer: coarse)').matches; }
+var PDF_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+function loadPdfLib() {
+  if (window.html2pdf) return Promise.resolve();
+  return new Promise(function (ok, ko) {
+    var s = document.createElement('script'); s.src = PDF_LIB; s.onload = ok; s.onerror = ko;
+    document.head.appendChild(s);
+  });
+}
+function makePdf() {
+  toast('création du pdf…');
+  var name = 'mise-en-place-' + S.slug + '-' + S.day + '.pdf';
+  var host = document.createElement('div');
+  host.className = 'pdf-host';
+  var page = document.createElement('div'); page.className = 'pdf-page'; page.innerHTML = printRoot.innerHTML;
+  host.appendChild(page);
+  document.body.appendChild(host);
+  loadPdfLib().then(function () {
+    return html2pdf().set({
+      margin: 14, filename: name, image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css'], avoid: 'tr' }
+    }).from(page).outputPdf('blob');
+  }).then(function (blob) {
+    host.remove();
+    var file = new File([blob], name, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      return navigator.share({ files: [file], title: 'mise en place' }).catch(function (e) {
+        if (e && e.name === 'AbortError') return;
+        downloadBlob(blob, name);
+      });
+    }
+    downloadBlob(blob, name);
+  }).catch(function () { host.remove(); toast('pdf impossible, vérifie la connexion.'); });
+}
+function downloadBlob(blob, name) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
 }
 function buildPrint(quoi, comment) {
   var d = S.data;
