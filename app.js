@@ -157,7 +157,9 @@ function lineQty(r) {
   if (r.unit_kind === 'piece') {
     var n = useActual ? Number(r.actual) : r.to_prep;
     if (n == null) return { n: null };
-    return { n: fq(n), u: n >= 2 ? 'pièces' : 'pièce', plain: fq(n) + ' ' + (n >= 2 ? 'pièces' : 'pièce'),
+    // Pièces façonnées à partir d'une pâte crue (falafel : boule de 39 g) : poids de pâte à préparer en dessous.
+    var dough = Number(r.raw_g_per_piece) > 0 ? kg(n * Number(r.raw_g_per_piece) / 1000) + ' de pâte crue' : null;
+    return { n: fq(n), u: n >= 2 ? 'pièces' : 'pièce', plain: fq(n) + ' ' + (n >= 2 ? 'pièces' : 'pièce'), w: dough, dough: dough,
              planned: useActual && r.to_prep != null ? fq(r.to_prep) : null };
   }
   if (r.gn11_kg) {
@@ -238,7 +240,7 @@ function renderSheet() {
         '</select></span>' + (q.w || q.planned ? '<span class="w">' + [q.w ? '≈ ' + q.w : '', q.planned ? 'prévu ' + q.planned : ''].filter(Boolean).join(' · ') + '</span>' : '');
     } else {
       qhtml = '<span class="n">' + q.n + ' <span class="u">' + q.u + '</span></span>' +
-        (q.cookedHint ? '<span class="w">≈ ' + q.cookedHint + '</span>' : q.kgOnly ? '<span class="w">poids du bac à renseigner</span>' : q.noGram ? '<span class="w">grammage à renseigner</span>' : (q.planned ? '<span class="w">prévu ' + q.planned + '</span>' : ''));
+        (q.dough ? '<span class="w">≈ ' + q.dough + (q.planned ? ' · prévu ' + q.planned : '') + '</span>' : q.cookedHint ? '<span class="w">≈ ' + q.cookedHint + '</span>' : q.kgOnly ? '<span class="w">poids du bac à renseigner</span>' : q.noGram ? '<span class="w">grammage à renseigner</span>' : (q.planned ? '<span class="w">prévu ' + q.planned + '</span>' : ''));
     }
     var who = '<select class="' + (r.assignee_id ? 'set' : '') + '" data-who="' + r.id + '" aria-label="assigner ' + esc(r.name) + '">' +
       '<option value="">assigner</option>' + d.team.map(function (m) {
