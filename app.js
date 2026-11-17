@@ -179,10 +179,10 @@ function lineQty(r) {
       var pu = pc.label + (pc.pack ? ' (' + pc.pack + ')' : '');
       return { n: fq(q), fmt: r.format, raw: String(pc.n), ru: pu, w: fq(q) + ' ' + r.format, plain: pc.n + ' ' + pu, planned: planned };
     }
-    // Bases qui ne se cuisent pas (mesclun, taboulé, lentilles) : le poids d'abord, les bacs en dessous.
-    if (r.category === 'bases' && r.show_weight) {
-      var kgv = (Math.round(cooked * 10) / 10).toLocaleString('fr-FR');
-      return { n: fq(q), fmt: r.format, raw: kgv, ru: 'kg', w: fq(q) + ' ' + r.format, plain: kgv + ' kg', planned: planned };
+    // Bases et toppings : le poids d'abord, les bacs en dessous ('kg cuit' si ça se cuit et que le rendement manque).
+    if ((r.category === 'bases' || r.category === 'toppings') && r.show_weight) {
+      var kgv = (Math.round(cooked * 10) / 10).toLocaleString('fr-FR'), ku = r.is_cooked ? 'kg cuit' : 'kg';
+      return { n: fq(q), fmt: r.format, raw: kgv, ru: ku, w: fq(q) + ' ' + r.format, plain: kgv + ' ' + ku, planned: planned };
     }
     return { n: fq(q), fmt: r.format, w: r.show_weight ? kg(cooked) : null, plain: fq(q) + ' ' + r.format, planned: planned };
   }
