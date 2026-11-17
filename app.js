@@ -153,11 +153,15 @@ function lineQty(r) {
     var g = useActual ? Number(r.actual) : Number(r.to_prep);
     var ratio = fmtRatio(r.format);
     var q = quarter(g / ratio);
-    // Poids indicatif cuit, et cru si le rendement est connu (onglet Rendements).
     var cooked = g * r.gn11_kg, y = Number(r.yield_ratio);
-    var w = !r.show_weight ? null : y > 0 ? kg(cooked) + ' cuit · ' + kg(cooked / y) + ' cru' : kg(cooked);
-    return { n: fq(q), fmt: r.format, w: w, plain: fq(q) + ' ' + r.format,
-             planned: useActual ? fq(quarter(Number(r.to_prep) / ratio)) : null };
+    var planned = useActual ? fq(quarter(Number(r.to_prep) / ratio)) : null;
+    // Produit qui se cuit et dont le rendement est connu : le chiffre principal est le poids cru à cuire,
+    // les bacs deviennent le résultat attendu.
+    if (y > 0) {
+      var raw = (Math.round(cooked / y * 10) / 10).toLocaleString('fr-FR');
+      return { n: fq(q), fmt: r.format, raw: raw, w: fq(q) + ' ' + r.format, plain: raw + ' kg cru', planned: planned };
+    }
+    return { n: fq(q), fmt: r.format, w: r.show_weight ? kg(cooked) : null, plain: fq(q) + ' ' + r.format, planned: planned };
   }
   if (r.need_kg != null && r.portion_qty) {
     return { n: (Math.round(r.need_kg * 10) / 10).toLocaleString('fr-FR'), u: 'kg', kgOnly: true, plain: kg(r.need_kg) };
@@ -193,7 +197,12 @@ function renderSheet() {
     var q = lineQty(r), open = S.open === r.id;
     var qhtml;
     if (q.n == null) qhtml = '<span class="na">grammage à renseigner</span>';
-    else if (q.fmt) {
+    else if (q.raw) {
+      qhtml = '<span class="n">' + q.raw + ' <span class="u">kg cru</span></span>' +
+        '<span class="w">≈ ' + q.n + ' <select class="fmt" data-fmt="' + r.id + '" aria-label="format de bac pour ' + esc(r.name) + '">' +
+        d.formats.map(function (f) { return '<option' + (f.code === r.format ? ' selected' : '') + '>' + f.code + '</option>'; }).join('') +
+        '</select>' + (q.planned ? ' · prévu ' + q.planned : '') + '</span>';
+    } else if (q.fmt) {
       qhtml = '<span class="n">' + q.n + ' <select class="fmt" data-fmt="' + r.id + '" aria-label="format de bac pour ' + esc(r.name) + '">' +
         d.formats.map(function (f) { return '<option' + (f.code === r.format ? ' selected' : '') + '>' + f.code + '</option>'; }).join('') +
         '</select></span>' + (q.w || q.planned ? '<span class="w">' + [q.w ? '≈ ' + q.w : '', q.planned ? 'prévu ' + q.planned : ''].filter(Boolean).join(' · ') + '</span>' : '');
