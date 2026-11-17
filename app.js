@@ -141,6 +141,17 @@ function memberName(id) {
 }
 
 // Quantité affichée d'une ligne (texte), selon le format choisi
+// Produits comptés en pièces crues (épis de maïs, potimarrons) : nombre de pièces pour un poids cuit donné.
+function piecesHint(r, cookedKg) {
+  if (!(Number(r.piece_cooked_g) > 0) || !(cookedKg > 0)) return null;
+  var n = Math.ceil(cookedKg * 1000 / Number(r.piece_cooked_g));
+  var s = { n: n, label: n > 1 ? (r.piece_label_plural || r.piece_label) : r.piece_label, pack: null };
+  if (Number(r.pack_size) > 0) {
+    var p = Math.ceil(n / Number(r.pack_size));
+    s.pack = p + ' ' + r.pack_label + (p > 1 ? 's' : '');
+  }
+  return s;
+}
 function lineQty(r) {
   var useActual = r.actual != null;
   if (r.unit_kind === 'piece') {
@@ -157,9 +168,16 @@ function lineQty(r) {
     var planned = useActual ? fq(quarter(Number(r.to_prep) / ratio)) : null;
     // Produit qui se cuit et dont le rendement est connu : le chiffre principal est le poids cru à cuire,
     // les bacs deviennent le résultat attendu.
+    var pc = piecesHint(r, cooked);
     if (y > 0) {
       var raw = (Math.round(cooked / y * 10) / 10).toLocaleString('fr-FR');
-      return { n: fq(q), fmt: r.format, raw: raw, ru: 'kg cru', w: fq(q) + ' ' + r.format, plain: raw + ' kg cru', planned: planned };
+      var ph = pc ? pc.n + ' ' + pc.label : null;
+      return { n: fq(q), fmt: r.format, raw: raw, ru: 'kg cru', hint: ph, w: fq(q) + ' ' + r.format + (ph ? ' · ' + ph : ''), plain: raw + ' kg cru', planned: planned };
+    }
+    // Compté en pièces crues sans rendement en poids (maïs : 1 épi = 215 g cuits) : le nombre de pièces d'abord.
+    if (pc) {
+      var pu = pc.label + (pc.pack ? ' (' + pc.pack + ')' : '');
+      return { n: fq(q), fmt: r.format, raw: String(pc.n), ru: pu, w: fq(q) + ' ' + r.format, plain: pc.n + ' ' + pu, planned: planned };
     }
     // Bases qui ne se cuisent pas (mesclun, taboulé, lentilles) : le poids d'abord, les bacs en dessous.
     if (r.category === 'bases' && r.show_weight) {
@@ -173,7 +191,8 @@ function lineQty(r) {
     if (yk > 0) {
       // Poids du bac encore inconnu : le poids cru à cuire, et le cuit attendu en dessous.
       var rk = (Math.round(r.need_kg / yk * 10) / 10).toLocaleString('fr-FR');
-      return { n: rk, u: 'kg cru', cookedHint: kg(r.need_kg) + ' cuit', plain: rk + ' kg cru', w: kg(r.need_kg) + ' cuit' };
+      var pk = piecesHint(r, r.need_kg), ch = pk ? pk.n + ' ' + pk.label + ' entiers' : kg(r.need_kg) + ' cuit';
+      return { n: rk, u: 'kg cru', cookedHint: ch, plain: rk + ' kg cru', w: ch };
     }
     return { n: (Math.round(r.need_kg * 10) / 10).toLocaleString('fr-FR'), u: 'kg', kgOnly: true, plain: kg(r.need_kg) };
   }
@@ -210,7 +229,7 @@ function renderSheet() {
     if (q.n == null) qhtml = '<span class="na">grammage à renseigner</span>';
     else if (q.raw) {
       qhtml = '<span class="n">' + q.raw + ' <span class="u">' + q.ru + '</span></span>' +
-        '<span class="w">≈ ' + q.n + ' <select class="fmt" data-fmt="' + r.id + '" aria-label="format de bac pour ' + esc(r.name) + '">' +
+        '<span class="w">' + (q.hint ? esc(q.hint) + ' · ' : '') + '≈ ' + q.n + ' <select class="fmt" data-fmt="' + r.id + '" aria-label="format de bac pour ' + esc(r.name) + '">' +
         d.formats.map(function (f) { return '<option' + (f.code === r.format ? ' selected' : '') + '>' + f.code + '</option>'; }).join('') +
         '</select>' + (q.planned ? ' · prévu ' + q.planned : '') + '</span>';
     } else if (q.fmt) {
