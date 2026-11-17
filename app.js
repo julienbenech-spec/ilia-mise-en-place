@@ -159,7 +159,12 @@ function lineQty(r) {
     // les bacs deviennent le résultat attendu.
     if (y > 0) {
       var raw = (Math.round(cooked / y * 10) / 10).toLocaleString('fr-FR');
-      return { n: fq(q), fmt: r.format, raw: raw, w: fq(q) + ' ' + r.format, plain: raw + ' kg cru', planned: planned };
+      return { n: fq(q), fmt: r.format, raw: raw, ru: 'kg cru', w: fq(q) + ' ' + r.format, plain: raw + ' kg cru', planned: planned };
+    }
+    // Bases qui ne se cuisent pas (mesclun, taboulé, lentilles) : le poids d'abord, les bacs en dessous.
+    if (r.category === 'bases' && r.show_weight) {
+      var kgv = (Math.round(cooked * 10) / 10).toLocaleString('fr-FR');
+      return { n: fq(q), fmt: r.format, raw: kgv, ru: 'kg', w: fq(q) + ' ' + r.format, plain: kgv + ' kg', planned: planned };
     }
     return { n: fq(q), fmt: r.format, w: r.show_weight ? kg(cooked) : null, plain: fq(q) + ' ' + r.format, planned: planned };
   }
@@ -198,7 +203,7 @@ function renderSheet() {
     var qhtml;
     if (q.n == null) qhtml = '<span class="na">grammage à renseigner</span>';
     else if (q.raw) {
-      qhtml = '<span class="n">' + q.raw + ' <span class="u">kg cru</span></span>' +
+      qhtml = '<span class="n">' + q.raw + ' <span class="u">' + q.ru + '</span></span>' +
         '<span class="w">≈ ' + q.n + ' <select class="fmt" data-fmt="' + r.id + '" aria-label="format de bac pour ' + esc(r.name) + '">' +
         d.formats.map(function (f) { return '<option' + (f.code === r.format ? ' selected' : '') + '>' + f.code + '</option>'; }).join('') +
         '</select>' + (q.planned ? ' · prévu ' + q.planned : '') + '</span>';
