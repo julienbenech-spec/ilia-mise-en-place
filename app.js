@@ -169,6 +169,12 @@ function lineQty(r) {
     return { n: fq(q), fmt: r.format, w: r.show_weight ? kg(cooked) : null, plain: fq(q) + ' ' + r.format, planned: planned };
   }
   if (r.need_kg != null && r.portion_qty) {
+    var yk = Number(r.yield_ratio);
+    if (yk > 0) {
+      // Poids du bac encore inconnu : le poids cru à cuire, et le cuit attendu en dessous.
+      var rk = (Math.round(r.need_kg / yk * 10) / 10).toLocaleString('fr-FR');
+      return { n: rk, u: 'kg cru', cookedHint: kg(r.need_kg) + ' cuit', plain: rk + ' kg cru', w: kg(r.need_kg) + ' cuit' };
+    }
     return { n: (Math.round(r.need_kg * 10) / 10).toLocaleString('fr-FR'), u: 'kg', kgOnly: true, plain: kg(r.need_kg) };
   }
   if (r.need_portions != null) {
@@ -213,7 +219,7 @@ function renderSheet() {
         '</select></span>' + (q.w || q.planned ? '<span class="w">' + [q.w ? '≈ ' + q.w : '', q.planned ? 'prévu ' + q.planned : ''].filter(Boolean).join(' · ') + '</span>' : '');
     } else {
       qhtml = '<span class="n">' + q.n + ' <span class="u">' + q.u + '</span></span>' +
-        (q.kgOnly ? '<span class="w">poids du bac à renseigner</span>' : q.noGram ? '<span class="w">grammage à renseigner</span>' : (q.planned ? '<span class="w">prévu ' + q.planned + '</span>' : ''));
+        (q.cookedHint ? '<span class="w">≈ ' + q.cookedHint + '</span>' : q.kgOnly ? '<span class="w">poids du bac à renseigner</span>' : q.noGram ? '<span class="w">grammage à renseigner</span>' : (q.planned ? '<span class="w">prévu ' + q.planned + '</span>' : ''));
     }
     var who = '<select class="' + (r.assignee_id ? 'set' : '') + '" data-who="' + r.id + '" aria-label="assigner ' + esc(r.name) + '">' +
       '<option value="">assigner</option>' + d.team.map(function (m) {
