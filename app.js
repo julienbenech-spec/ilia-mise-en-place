@@ -153,7 +153,10 @@ function lineQty(r) {
     var g = useActual ? Number(r.actual) : Number(r.to_prep);
     var ratio = fmtRatio(r.format);
     var q = quarter(g / ratio);
-    return { n: fq(q), fmt: r.format, w: r.show_weight ? kg(g * r.gn11_kg) : null, plain: fq(q) + ' ' + r.format,
+    // Poids indicatif cuit, et cru si le rendement est connu (onglet Rendements).
+    var cooked = g * r.gn11_kg, y = Number(r.yield_ratio);
+    var w = !r.show_weight ? null : y > 0 ? kg(cooked) + ' cuit · ' + kg(cooked / y) + ' cru' : kg(cooked);
+    return { n: fq(q), fmt: r.format, w: w, plain: fq(q) + ' ' + r.format,
              planned: useActual ? fq(quarter(Number(r.to_prep) / ratio)) : null };
   }
   if (r.need_kg != null && r.portion_qty) {
